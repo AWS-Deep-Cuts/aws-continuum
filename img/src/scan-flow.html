@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<!-- scan-flow: 1 回のフルスキャンで、AI コーディングツールと AWS がそれぞれ何をするか（記事「1 回のフルスキャンで起きること」、README 手順 5）。
+     上の枠（灰色の実線）は AI コーディングツールが実行するコマンド、下の枠（差し色の点線）は AWS が自動で行う処理。
+     番号 1〜6 は、記事の番号付きの説明 1〜6 と同じ。
+     根拠:
+     - 手順 1〜6: プラグインのスキル skills/scanning-with-aws-security-agent/SKILL.md 74〜160 行目（factsheet continuum-159）
+       1 作業フォルダーを zip にする（.git/・.security-agent/・node_modules/ などを除く）
+       2 aws s3 cp ... --expected-bucket-owner で、バケットの所有者の確認を付けてアップロードする
+       3 aws securityagent create-code-review（作業フォルダーごとに 1 つ作り、2 回目からは再利用する）
+       4 aws securityagent start-code-review-job
+       5 5 分ごとに batch-get-code-review-jobs で状態を確かめる（"Takes ~45 minutes"）
+       6 Finding を取り出し、深刻度ごとにまとめて表示し、.security-agent/findings-<スキャンの ID>.md に書き込む
+     - スキャンを自動で始めず、実行してよいかを利用者に確かめる（SKILL.md 22〜26 行目）。
+       「Claude Code は既定で各コマンドの前に許可を求める」は、記事の全体像の説明「Claude Code は、既定の設定では、コマンドを実行する前にあなたに許可を求めます」を 1 行に縮めたもの
+     - Security Agent はサービスロールでバケットの zip を読む（CreateCodeReviewInput.serviceRole、continuum-160）
+     - 段階の名前: CodeReviewJob.steps[].name の列挙は PREFLIGHT・STATIC_ANALYSIS・PENTEST・VALIDATION・FINALIZING。
+       CodeReviewJob の説明は "progresses through preflight, static analysis, and finalizing steps"（continuum-165）。
+       PENTEST はコードレビューの説明に無いため描かない。VALIDATION は列挙にあるが、実際に現れるかは観察項目のため点線で描く（推論）
+     - 矢印を 2 本に分ける: 5 は batch-get-code-review-jobs でジョブの状態を受け取る（「段階を進む」の箱との両向きの矢印「状態」）。
+       6 は Finding を取り出す（「Finding を記録する」の箱から 6 への矢印「Finding」）
+     - 所要時間（スキルの記述で約 45 分、ユーザーガイドによると約 1 時間。continuum-179）、点線の段階の観察、
+       stop-code-review-job でジョブを止められること（continuum-174）は、記事の本文に書いてあるため図には描かない
+     線はすべて水平か垂直。「Finding」の線は、下の枠の見出し（x 約 250 まで）を避けて x=352 で上がり、上の枠の中の y=456 で左に折れて 6 の下に入る。
+     「状態」の線は x=448 で下がり、y=816 で右に折れて「段階を進む」の箱に入る。2 本の線は交わらない。
+     強調: 「Finding を記録する」の箱だけ差し色 -->
+<link rel="stylesheet" href="diagram.css">
+<link rel="stylesheet" href="deepcuts.css">
+<script src="wires.js"></script>
+<style>
+  #fig { width: 800px; height: 1008px; }
+  .lane { left: 0; width: 800px; }
+  .lane.ai { border-style: solid; }
+  .lane > .lt { display: flex; align-items: center; gap: 8px; top: 6px; white-space: nowrap; }
+  .lane > .lt img { width: 32px; height: 32px; }
+  .st { width: 224px; height: 140px; padding: 8px 12px; }
+  .st > b { font-size: 18px; line-height: 1.35; white-space: nowrap; }
+  .st > span { white-space: nowrap; }
+  .st.hot { display: flex; flex-direction: column; justify-content: center; }
+  .stage { display: block; width: fit-content; margin-top: 8px; font-family: var(--font-mono); font-weight: 800; font-size: 15px; line-height: 22px; padding: 2px 8px; border: 2px solid var(--ink); background: #fff; }
+  .stage.maybe { border-style: dashed; border-color: var(--grey); color: var(--grey); }
+  .txt { position: absolute; font-size: 16px; font-weight: 700; line-height: 24px; white-space: nowrap; }
+  .txt code { font-family: var(--font-mono); font-weight: 800; font-size: 15px; }
+  .lbl.ink { color: var(--ink); font-size: 16px; line-height: 24px; }
+  .pt { position: absolute; width: 0; height: 0; }
+</style>
+</head><body>
+<div id="fig">
+  <svg id="wires"></svg>
+
+  <!-- 上: AI コーディングツールが実行するコマンド。列は A x 24〜248、B x 288〜512、C x 552〜776 -->
+  <div class="lane ai" style="top:0;height:504px"><span class="lt"><img src="../icons/Client.svg">AI コーディングツールが実行するコマンド</span></div>
+  <div class="txt" style="left:24px;top:52px">Claude Code は既定で各コマンドの前に許可を求める</div>
+  <div class="st" id="s1" data-self="1" style="left:24px;top:96px"><i>1</i><b>zip にまとめる</b><span><code>.git/</code> などを除く</span></div>
+  <div class="st" id="s2" data-self="1" style="left:288px;top:96px"><i>2</i><b>S3 バケットに<br>アップロードする</b><span>バケットの所有者の<br>確認を付ける</span></div>
+  <div class="st" id="s3" data-self="1" style="left:552px;top:96px"><i>3</i><b>コードレビューを<br>作成する</b><span><code>create-code-review</code></span></div>
+  <div class="st" id="s4" data-self="1" style="left:552px;top:268px"><i>4</i><b>スキャンを始める</b><span><code>start-code-review-job</code></span></div>
+  <div class="st" id="s5" data-self="1" style="left:288px;top:268px"><i>5</i><b>状態を確かめる</b><span>5 分ごと</span></div>
+  <div class="st" id="s6" data-self="1" style="left:24px;top:268px"><i>6</i><b>Finding を取り出す</b><span>表示して<br>レポートに書き込む</span></div>
+
+  <!-- 2 つの枠の隙間 y 504〜576 -->
+  <div class="lbl ink" style="left:268px;top:528px">Finding</div>
+  <div class="lbl ink" style="left:460px;top:528px">状態</div>
+  <div class="lbl ink" style="left:556px;top:528px">ジョブを依頼</div>
+
+  <!-- 下: AWS が自動で行う処理 -->
+  <div class="lane aws" style="top:576px;height:432px"><span class="lt"><img src="../icons/AWSSecurityAgent.svg">AWS が自動で行う処理</span></div>
+  <div class="st" id="a" data-self="1" style="left:552px;top:640px;height:104px"><b>コードを読む</b><span>サービスロールで<br>zip を読む</span></div>
+  <div class="st" id="b" data-self="1" style="left:552px;top:784px;height:200px"><b>段階を進む</b>
+    <span class="stage">PREFLIGHT</span><span class="stage">STATIC_ANALYSIS</span><span class="stage maybe">VALIDATION</span><span class="stage">FINALIZING</span></div>
+  <div class="st hot" id="f" data-self="1" style="left:288px;top:840px;height:88px"><b>Finding を記録する</b><span>確信度と検証の状態</span></div>
+</div>
+<script>
+// 折れ線の矢印。pts は [x, y] の並び。both で両端に矢印を付ける
+function path(pts, o = {}) {
+  const NS = 'http://www.w3.org/2000/svg', p = document.createElementNS(NS, 'polyline');
+  p.setAttribute('points', pts.map(q => q.join(',')).join(' '));
+  p.setAttribute('fill', 'none'); p.setAttribute('stroke', '#0c0c0c'); p.setAttribute('stroke-width', '2.5');
+  p.setAttribute('marker-end', 'url(#ak)');
+  if (o.both) p.setAttribute('marker-start', 'url(#aks)');
+  document.getElementById('wires').appendChild(p);
+}
+window.addEventListener('load', async () => { await document.fonts.ready;
+  wire('#s1', '#s2', {}); wire('#s2', '#s3', {});
+  wire('#s3', '#s4', {from: 'b', to: 't'});
+  wire('#s4', '#s5', {from: 'l', to: 'r'}); wire('#s5', '#s6', {from: 'l', to: 'r'});
+  wire('#s4', '#a', {from: 'b', to: 't'});
+  wire('#a', '#b', {from: 'b', to: 't', hot: true});
+  wire('#b', '#f', {from: 'l', to: 'r', hot: true});
+  // 状態: 5 の下 → 段階を進む の左（両向き）
+  path([[448, 412], [448, 816], [548, 816]], {both: true});
+  // Finding: Finding を記録する の上 → 6 の下
+  path([[352, 836], [352, 456], [136, 456], [136, 412]]);
+  document.body.dataset.ready = '1';
+});
+</script>
+</body></html>

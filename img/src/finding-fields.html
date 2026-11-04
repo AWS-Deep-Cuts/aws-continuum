@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<!-- finding-fields: Security Agent の Finding の主な項目と、AI コーディングツールに返る要約に載らない項目（記事「Finding を読む」、README 手順 6）。
+     左のカードは API の Finding（aws securityagent batch-get-findings の応答）、右のカードは Kiro power が使う MCP サーバーの get_scan_findings が AI に返す項目。
+     根拠:
+     - 左: botocore securityagent/2025-09-06/service-2.json の Finding のシェイプ（factsheet continuum-165）。
+       riskLevel・confidence・validationStatus（"The simulated validation status of the finding."）・attackScript・verificationScript・
+       reasoning・remediationCode・codeLocations。呼び名は記事と README の表と同じ（深刻度・確信度・検証の状態・攻撃スクリプト・検証スクリプト・
+       判断の理由・修正の提案・コードの位置）
+     - 右: awslabs/mcp の src/security-agent-mcp-server/awslabs/security_agent_mcp_server/scanner.py 566〜579 行目（5fa8de7）。
+       返す項目は findingId・name・description・riskLevel・riskType・confidence・status・remediationCode・codeLocations の 9 つ（continuum-166）。
+       そのため、検証の状態・攻撃スクリプト・検証スクリプト・判断の理由は「載らない」と描く
+     - Claude Code のプラグインのスキル skills/scanning-with-aws-security-agent/SKILL.md 222 行目は「返されたすべての項目を含める」と書き、
+       224〜255 行目のレポートの見本には検証の状態などが無い。記事と同じく「載るかは AI コーディングツールの解釈による」と書く
+     - validationMode（DISABLED・SIMULATED）の既定値は API の仕様に書かれていない（CreateCodeReviewInput、continuum-165）
+     強調: 左のカードの検証の状態・攻撃スクリプト・検証スクリプト・判断の理由の 4 行を差し色（記事の Deep Cut）。右のカードの載らない 4 行と 1 行ずつ対応させる。右のカードの載らない 4 行は灰色の点線 -->
+<link rel="stylesheet" href="diagram.css">
+<link rel="stylesheet" href="deepcuts.css">
+<script src="wires.js"></script>
+<style>
+  #fig { width: 800px; height: 640px; }
+  .card { width: 356px; }
+  .card > .h { line-height: 1.35; }
+  .card > .h code { font-family: var(--font-mono); font-weight: 800; font-size: 15px; display: block; }
+  .rows { padding: 8px 12px; }
+  .row { display: flex; align-items: center; height: 36px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .row:last-child { border-bottom: 0; }
+  .row code { width: 184px; flex: none; font-family: var(--font-mono); font-weight: 800; font-size: 15px; }
+  .row span { font-size: 16px; font-weight: 700; }
+  .row.hot { background: #ffe9df; color: var(--hot); margin: 0 -12px; padding: 0 12px; }
+  .row.miss { border: 2px dashed var(--line); color: var(--grey); justify-content: center; }
+  .row.miss + .row.miss { border-top: 0; }
+  .row.miss span { font-weight: 900; }
+  .txt { position: absolute; font-size: 16px; font-weight: 700; line-height: 24px; white-space: nowrap; }
+  .txt code, .done code { font-family: var(--font-mono); font-weight: 800; font-size: 15px; }
+  .done { position: absolute; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 0 18px; background: var(--hot); color: #fff; font-size: 18px; font-weight: 900; white-space: nowrap; }
+  .lbl.ink { color: var(--ink); font-size: 16px; }
+</style>
+</head><body>
+<div id="fig">
+  <svg id="wires"></svg>
+
+  <div class="rowl" style="left:0;top:0">Finding の項目と AI に返る要約</div>
+
+  <div class="card" id="left" style="left:0;top:44px">
+    <div class="h">API の Finding の主な項目<code>aws securityagent batch-get-findings</code></div>
+    <div class="rows">
+      <div class="row"><code>riskLevel</code><span>深刻度</span></div>
+      <div class="row"><code>confidence</code><span>確信度</span></div>
+      <div class="row hot"><code>validationStatus</code><span>検証の状態</span></div>
+      <div class="row hot"><code>attackScript</code><span>攻撃スクリプト</span></div>
+      <div class="row hot"><code>verificationScript</code><span>検証スクリプト</span></div>
+      <div class="row hot"><code>reasoning</code><span>判断の理由</span></div>
+      <div class="row"><code>remediationCode</code><span>修正の提案</span></div>
+      <div class="row"><code>codeLocations</code><span>コードの位置</span></div>
+    </div>
+  </div>
+
+  <div class="card" id="right" style="left:444px;top:44px">
+    <div class="h">AI に返る要約<code>MCP サーバーの get_scan_findings</code></div>
+    <div class="rows">
+      <div class="row"><code>riskLevel</code><span>深刻度</span></div>
+      <div class="row"><code>confidence</code><span>確信度</span></div>
+      <div class="row miss"><span>載らない</span></div>
+      <div class="row miss"><span>載らない</span></div>
+      <div class="row miss"><span>載らない</span></div>
+      <div class="row miss"><span>載らない</span></div>
+      <div class="row"><code>remediationCode</code><span>修正の提案</span></div>
+      <div class="row"><code>codeLocations</code><span>コードの位置</span></div>
+    </div>
+  </div>
+  <div class="lbl ink" style="left:366px;top:200px">要約する</div>
+  <div class="pt" id="pa" data-self="1" style="position:absolute;left:356px;top:236px;width:0;height:0"></div>
+  <div class="pt" id="pb" data-self="1" style="position:absolute;left:444px;top:236px;width:0;height:0"></div>
+
+  <div class="txt" style="left:444px;top:432px">他に <code>findingId</code>・<code>name</code>・<code>description</code>・<br><code>riskType</code>・<code>status</code> を返す。合わせて 9 つ</div>
+  <div class="txt" style="left:0;top:432px">Kiro power の経路では<br>右の MCP サーバーが要約を返す</div>
+
+  <div class="done" style="left:0;top:504px;width:800px;height:52px">どちらの経路でも 生の応答は <code style="font-size:16px">aws securityagent batch-get-findings</code> で読める</div>
+
+  <div class="txt" style="left:0;top:580px">Claude Code のレポートに検証の状態が載るかは AI コーディングツールの解釈による<br>検証を行うかは検証の方式 <code>validationMode</code> で決まり、既定値は API の仕様に書かれていない</div>
+</div>
+<script>
+window.addEventListener('load', async () => { await document.fonts.ready;
+  wire('#pa', '#pb', {from: 'r', to: 'l'});
+  document.body.dataset.ready = '1';
+});
+</script>
+</body></html>

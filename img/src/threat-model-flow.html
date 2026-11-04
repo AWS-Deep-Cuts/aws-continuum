@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<!-- threat-model-flow: 仕様書とコードから脅威を作成する流れと STRIDE の分類（記事「脅威モデリング」、README 手順 8）。
+     3 つの枠: あなたが行う操作（灰色の点線）、AI コーディングツール（灰色の実線）、AWS が自動で行う処理（差し色の点線）。
+     番号は処理の順: 1 あなたが仕様書を作業フォルダーに用意する（README 8-1 で docs/ に複製する）→ 2 AI コーディングツールが zip と仕様書をアップロードする
+     → 3 脅威モデルを作成してジョブを始める → 処理 a・b（AWS）→ 4 AI コーディングツールが list-threats で脅威を読む。
+     根拠:
+     - 脅威モデリングのスキル skills/threat-modeling-with-aws-security-agent/SKILL.md 1〜123 行目（factsheet continuum-162）:
+       仕様書 requirements.md・design.md の少なくとも 1 つと、コードの zip を S3 に置き、
+       create-threat-model --service-role ... --assets ... --scope-docs ... と start-threat-model-job で始め、list-threats で脅威を読む
+     - CreateThreatModelInput.scopeDocs "The scoped documents for the agent to focus on during threat modeling."（a の「仕様書を重点的に見る」）
+     - Threat のシェイプ: severity（CRITICAL・HIGH・MEDIUM・LOW・INFO）・evidence（根拠のソースファイル）・stride（b の「深刻度と根拠のファイル」）
+     - StrideCategory: SPOOFING・TAMPERING・REPUDIATION・INFORMATION_DISCLOSURE・DENIAL_OF_SERVICE・ELEVATION_OF_PRIVILEGE。
+       日本語の呼び名は記事と README の表と同じ（なりすまし・改ざん・否認・情報の漏えい・サービスの妨害・権限の昇格）
+     配置: 「あなたが行う操作」の枠（x 0〜248）は箱 1 つに合わせて幅を縮め、AI コーディングツールの枠（x 272〜800）と横に並べる。
+     1 → 2 の矢じりは、AI コーディングツールの枠の線から 16px 以上離れる。
+     1 → 2 は同じ高さで右へ。AI コーディングツールの枠の中は、2 と 3 を 1 段目、4 を 2 の下に置く。
+     線はすべて水平か垂直。枠をまたぐ縦の線（x=420 と x=668）は、下の枠の見出し（x 約 250 まで）から離れている。
+     4 は 2 の下に置き、b の上から x=420 でまっすぐ上がる
+     強調: 差し色は b の「脅威を記録する」だけ。STRIDE の分類は、AI の判断の結果を予告しないよう、どれも差し色にしない -->
+<link rel="stylesheet" href="diagram.css">
+<link rel="stylesheet" href="deepcuts.css">
+<script src="wires.js"></script>
+<style>
+  #fig { width: 800px; height: 833px; }
+  .lane.ai { border-style: solid; }
+  .lane > .lt { display: flex; align-items: center; gap: 8px; top: 6px; white-space: nowrap; }
+  .lane > .lt img { width: 32px; height: 32px; }
+  .st { width: 224px; padding: 8px 12px; }
+  .st > b { font-size: 18px; line-height: 1.35; white-space: nowrap; }
+  .st > span { white-space: nowrap; }
+  .card { left: 24px; width: 752px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 24px; padding: 8px 20px 10px; }
+  .grid div { display: flex; align-items: center; height: 36px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .grid div:nth-last-child(-n+2) { border-bottom: 0; }
+  .grid b { width: 132px; flex: none; font-size: 16px; font-weight: 900; }
+  .grid code { font-family: var(--font-mono); font-weight: 800; font-size: 15px; }
+  .card > .h code { font-family: var(--font-mono); font-weight: 800; font-size: 15px; margin-left: 10px; }
+  .lbl.ink { color: var(--ink); font-size: 16px; line-height: 24px; }
+</style>
+</head><body>
+<div id="fig">
+  <svg id="wires"></svg>
+
+  <!-- 上の段: あなたが行う操作（x 0〜248）と AI コーディングツール（x 272〜800）。箱の列は 1 x 24〜224、2・4 x 312〜528、3・a x 560〜776 -->
+  <div class="lane" style="left:0;top:0;width:248px;height:208px"><span class="lt"><img src="../icons/User.svg">あなたが行う操作</span></div>
+  <div class="st" id="s1" data-self="1" style="left:24px;top:64px;width:200px;height:120px"><i>1</i><b>仕様書を用意する</b><span><code>requirements.md</code><br><code>design.md</code></span></div>
+
+  <div class="lane ai" style="left:272px;top:0;width:528px;height:360px"><span class="lt"><img src="../icons/Client.svg">AI コーディングツール</span></div>
+  <div class="st" id="s2" data-self="1" style="left:312px;top:64px;width:216px;height:120px"><i>2</i><b>zip と仕様書を<br>アップロードする</b><span>S3 バケットに保存</span></div>
+  <div class="st" id="s3" data-self="1" style="left:560px;top:64px;width:216px;height:120px"><i>3</i><b>脅威モデルを作成して<br>ジョブを始める</b><span><code>--scope-docs</code> に仕様書</span></div>
+  <div class="st" id="s4" data-self="1" style="left:312px;top:216px;width:216px;height:120px"><i>4</i><b>脅威を読む</b><span><code>list-threats</code></span></div>
+
+  <!-- 隙間 y 360〜416 -->
+  <div class="lbl ink" style="left:610px;top:376px">ジョブ</div>
+  <div class="lbl ink" style="left:364px;top:376px">脅威</div>
+
+  <!-- 下: AWS が自動で行う処理 -->
+  <div class="lane aws" style="left:0;top:416px;width:800px;height:417px"><span class="lt"><img src="../icons/AWSSecurityAgent.svg">AWS が自動で行う処理</span></div>
+  <div class="st" id="a" data-self="1" style="left:560px;top:480px;width:216px;height:120px"><b>仕様書とコードを<br>分析する</b><span>仕様書を重点的に見る</span></div>
+  <div class="st hot" id="b" data-self="1" style="left:312px;top:480px;width:216px;height:120px"><b>脅威を記録する</b><span>深刻度と<br>根拠のファイル</span></div>
+
+  <div class="card" id="stride" style="top:640px">
+    <div class="h">STRIDE の分類<code>stride</code></div>
+    <div class="grid">
+      <div><b>なりすまし</b><code>SPOOFING</code></div><div><b>情報の漏えい</b><code>INFORMATION_DISCLOSURE</code></div>
+      <div><b>改ざん</b><code>TAMPERING</code></div><div><b>サービスの妨害</b><code>DENIAL_OF_SERVICE</code></div>
+      <div><b>否認</b><code>REPUDIATION</code></div><div><b>権限の昇格</b><code>ELEVATION_OF_PRIVILEGE</code></div>
+    </div>
+  </div>
+  <div class="pt" id="sT" data-self="1" style="position:absolute;left:420px;top:640px;width:0;height:0"></div>
+</div>
+<script>
+window.addEventListener('load', async () => { await document.fonts.ready;
+  wire('#s1', '#s2', {});
+  wire('#s2', '#s3', {});
+  wire('#s3', '#a', {from: 'b', to: 't'});
+  wire('#a', '#b', {from: 'l', to: 'r', hot: true});
+  wire('#b', '#s4', {from: 't', to: 'b'});
+  wire('#b', '#sT', {from: 'b', to: 't'});
+  document.body.dataset.ready = '1';
+});
+</script>
+</body></html>

@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<!-- architecture: ハンズオンの構成図（README「構築するアーキテクチャ」、記事「ハンズオンはこちら！」）。
+     左はあなたの PC、右は AWS。箱の「手順 N」は README の手順の番号（README の番号が変わったら、ここも直す）。
+     左の枠の中の灰色の実線の枠は、AI コーディングツールが実行する手順（4 と 5〜8）。手順 1・10 はあなたがスクリプトを実行する。
+     根拠:
+     - 手順 1: hands-on/precheck.sh が AWS Price List（https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/SecAgent/current/ap-northeast-1/index.json）を読み、
+       APN1-repository-code-review と APN1-Threat-Modeling の単価が 0.00 でなければ止まる。AWS には何も作らない（README 手順 1、factsheet continuum-167）。
+       Price List はリージョンのリソースではないため、東京リージョンの枠の外に置く
+     - 手順 4: プラグインのスキル setup-security-agent が、エージェントスペース deepcuts-record-shop・IAM ロール SecurityAgentScanRole・
+       S3 バケット security-agent-scans-<アカウント ID>-<リージョン> を作成し、ロールとバケットをエージェントスペースに登録する（continuum-160、README 4-2）
+     - 手順 5〜8: AI コーディングツールが zip・diff.patch・仕様書をバケットにアップロードし、コードレビュー・差分スキャン・脅威モデリングを依頼する
+       （continuum-159・161・162）。Security Agent はサービスロールを引き受けてバケットを読む（信頼ポリシーのプリンシパル securityagent.amazonaws.com）
+     - コードレビュー・脅威モデル・Finding・脅威はエージェントスペースに属する（README の「作成されるもの」の表）
+     - 手順 2・3・7: アプリの起動・AI だけのレビュー・テスト・攻撃の確認は PC の中だけで行い、AWS には何も送らない。そのため矢印を付けない
+     - 手順 10: hands-on/cleanup.sh がエージェントスペース・バケット・ロール・ロググループを削除する（README 手順 10）
+     - Security Agent が作成した場合だけ残る CloudWatch Logs のロググループ（/aws/securityagent/）は、図を簡単にするため描かない。README の表に書いてある
+     - エージェントスペースは、コードレビューと脅威モデルを含む点線の枠で描く（overview と同じ描き方）
+     線はすべて水平か垂直。左の箱の中心の高さと、宛先の高さをそろえている。どの矢印も枠の線では止めず、枠の中の対象で止める:
+     手順 4 → S3 バケット、手順 5〜8 → コードレビューの箱、手順 10 → 「作成したもの一式」の箱。
+     サービスロール → S3 バケットは左向き、Security Agent → サービスロールは上向き -->
+<link rel="stylesheet" href="diagram.css">
+<link rel="stylesheet" href="deepcuts.css">
+<script src="wires.js"></script>
+<style>
+  #fig { width: 800px; height: 912px; }
+  .group > .gl { font-family: var(--font-body); font-size: 17px; font-weight: 900; letter-spacing: 0; white-space: nowrap; }
+  .group > .gl .code { font-family: var(--font-mono); font-weight: 800; font-size: 15px; color: var(--grey); }
+  .group.region { border: 2px dashed #00a4a6; }
+  .lane.ai { border-style: solid; }
+  .lane > .lt { top: 6px; white-space: nowrap; }
+  .bx { position: absolute; border: 3px solid var(--ink); background: #fff; padding: 6px 12px; }
+  .bx b { display: block; font-size: 17px; font-weight: 900; line-height: 26px; white-space: nowrap; }
+  .bx b em { font-style: normal; color: var(--hot); margin-right: 6px; }
+  .bx span { display: block; font-size: 16px; font-weight: 500; line-height: 22px; white-space: nowrap; }
+  .bx code { font-family: var(--font-mono); font-weight: 800; font-size: 15px; }
+  .bx.c { text-align: center; }
+  .node.role { width: 190px; }
+  .node .s code { font-family: var(--font-mono); font-weight: 800; font-size: 15px; color: var(--grey); }
+  .lbl.ink { color: var(--ink); font-size: 16px; line-height: 24px; }
+  .pt { position: absolute; width: 0; height: 0; }
+  .group.dashed > .gl.two { left: 14px; top: 4px; display: block; line-height: 26px; }
+  .group.dashed > .gl.two .code { display: block; }
+  .bx.row { display: flex; align-items: center; justify-content: center; gap: 12px; }
+  .bx.row b, .bx.row span { display: inline; }
+</style>
+</head><body>
+<div id="fig">
+  <svg id="wires"></svg>
+
+  <!-- 左: あなたの PC。箱は x 24〜288、AI コーディングツールの枠の中は x 48〜264 -->
+  <div class="group" style="left:0;top:0;width:312px;height:912px">
+    <div class="gl"><img src="../icons/Client.svg">あなたの PC</div>
+  </div>
+  <div class="bx" id="b1" style="left:24px;top:64px;width:264px;height:72px"><b><em>手順 1</em>事前確認</b><span><code>precheck.sh</code></span></div>
+  <div class="lane ai" style="left:24px;top:168px;width:264px;height:504px"><span class="lt">AI コーディングツールが実行</span></div>
+  <div class="bx" id="b2" style="left:48px;top:232px;width:216px;height:120px"><b><em>手順 4</em>準備</b><span>エージェントスペース・<br>サービスロール・<br>S3 バケットを作成</span></div>
+  <div class="bx" id="b3" style="left:48px;top:528px;width:216px;height:120px"><b><em>手順 5〜8</em>依頼</b><span>zip のアップロード<br>スキャンと<br>脅威モデリングの依頼</span></div>
+  <div class="bx" id="b4" style="left:24px;top:696px;width:264px;height:72px"><b><em>手順 2・3・7</em></b><span>PC の中だけで行う</span></div>
+  <div class="bx" id="b5" style="left:24px;top:792px;width:264px;height:72px"><b><em>手順 10</em>後片付け</b><span><code>cleanup.sh</code></span></div>
+
+  <!-- 右: AWS Cloud -->
+  <div class="group cloud" style="left:336px;top:0;width:464px;height:912px">
+    <div class="gl"><img src="../icons/AWSCloudlogo.svg">AWS Cloud</div>
+  </div>
+  <div class="bx c" id="pl" style="left:360px;top:64px;width:224px;height:72px"><b>AWS Price List</b><span>単価を確かめる</span></div>
+
+  <div class="group region" id="rg" style="left:360px;top:168px;width:416px;height:720px">
+    <div class="gl"><img src="../icons/Region.svg">東京リージョン<span class="code">ap-northeast-1</span></div>
+  </div>
+  <!-- アイコンの中心の高さ y=292 を、手順 4 の箱の中心にそろえる -->
+  <div class="node" id="s3" style="left:384px;top:264px"><img src="../icons/AmazonSimpleStorageServiceBucketWithObjects.svg"><div class="t">S3 バケット</div><div class="s">zip・差分・仕様書</div></div>
+  <div class="node role" id="role" style="left:562px;top:264px"><img src="../icons/AWSIdentityAccessManagementRole.svg"><div class="t">サービスロール</div><div class="s"><code>SecurityAgentScanRole</code></div></div>
+  <div class="lbl ink" style="left:540px;top:256px">読む</div>
+  <div class="lbl ink" style="left:668px;top:388px">引き受ける</div>
+
+  <!-- Security Agent ＞ エージェントスペース（点線の枠）＞ コードレビューと脅威モデル -->
+  <div class="group" id="sa" style="left:384px;top:428px;width:368px;height:296px">
+    <div class="gl"><img src="../icons/AWSSecurityAgent.svg">Security Agent</div>
+  </div>
+  <div class="group dashed" style="left:408px;top:484px;width:320px;height:216px">
+    <div class="gl two">エージェントスペース<span class="code">deepcuts-record-shop</span></div>
+  </div>
+  <!-- コードレビューの箱の中心の高さ y=588 を、手順 5〜8 の箱の中心にそろえる -->
+  <div class="bx row" id="cr" style="left:448px;top:564px;width:240px;height:48px"><b>コードレビュー</b><span>Finding</span></div>
+  <div class="bx row" id="tm" style="left:448px;top:628px;width:240px;height:48px"><b>脅威モデル</b><span>脅威</span></div>
+
+  <!-- 手順 10 の宛先。中心の高さ y=828 を、手順 10 の箱の中心にそろえる -->
+  <div class="bx c" id="all" style="left:408px;top:792px;width:344px;height:72px"><b>作成したもの一式</b><span>エージェントスペースなど</span></div>
+
+  <div class="pt" id="saT" data-self="1" style="left:657px;top:428px"></div>
+</div>
+<script>
+window.addEventListener('load', async () => { await document.fonts.ready;
+  wire('#b1', '#pl', {});
+  wire('#b2', '#s3', {to: 'l'});
+  wire('#b3', '#cr', {to: 'l'});
+  wire('#b5', '#all', {to: 'l'});
+  wire('#role', '#s3', {from: 'l', to: 'r'});
+  wire('#saT', '#role', {from: 't', to: 'b'});
+  document.body.dataset.ready = '1';
+});
+</script>
+</body></html>
