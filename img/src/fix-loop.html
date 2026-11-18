@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<!-- fix-loop: 修正・あなたの確認・差分スキャン・コミットの流れ（記事「修正と差分スキャン」、README 手順 7）。
+     3 つの枠: あなたが行う操作（灰色の点線）、AI コーディングツール（灰色の実線）、AWS が自動で行う処理（差し色の点線）。
+     記事の説明「図の灰色の実線の枠は AI コーディングツール、灰色の点線の枠はあなた、差し色の点線の枠は AWS が行うことを表します」と一致させる。
+     番号は処理の順で、列 A〜D は左から右へ時間の順に並ぶ。番号を左の列から順に追える:
+     A: 1 Finding を読む → B: 2 ファイルを編集する、3 あなたが変更を確かめる → C: 4 差分スキャンを始める、5 変更した行を分析する
+     → D: 6 新しい Finding の有無、7 AI コーディングツールが結果を表示する、8 あなたがコミットを決める。
+     差分スキャンの結果を受け取って表示するのは AI コーディングツールなので、6 の結果は 7（AI コーディングツール）を通って 8 に届く。
+     根拠:
+     - 1・2: AI コーディングツールが Finding の説明と位置を読み、手元のファイルを編集する。修正を始める前に利用者に聞き、1 件ずつ直す
+       （skills/scanning-with-aws-security-agent/SKILL.md 259〜267 行目、skills/remediating-with-aws-security-agent/SKILL.md 237〜249 行目、factsheet continuum-163）
+     - 3: README 7-2 の git diff・python3 -m unittest・curl による攻撃の確認。記事の「差分を読み、テストを実行し、修正前に成功した攻撃が止まったかを確かめてから」
+     - 4: 差分スキャンのスキルは git diff HEAD を diff.patch にし、zip と一緒にバケットにアップロードして、
+       start-code-review-job --diff-source s3Uri=... で始める（skills/diff-scanning-with-aws-security-agent/SKILL.md 29〜109 行目、continuum-161）。
+       README 7-3 のとおり、コミットする前に頼む
+     - 5: StartCodeReviewJobInput.diffSource "the job analyzes only the changed lines instead of performing a full scan."（continuum-161）
+     - 6: 差分スキャンが確かめるのは、変更した行に新しい問題が無いか。元の Finding が消えたかではない（記事・README 7-6）
+     - 7: AI コーディングツールが結果を取り出し、要約して表示する（スキルの手順。scan-flow の 6、記事の全体像の説明と同じ）
+     - 8: リポジトリを連携していないため StartCodeRemediation のプルリクエストは作られず、コミットはあなたが決める（continuum-163、README 7-5）
+     線はすべて水平か垂直。3 → 4 は 3 の右から出て x=450 で下がる。4 → 5 は x=546 を通り、3 → 4 の線と交わらない。
+     強調: 8 の「コミットを決める」だけ差し色。記事の「修正をコミットするかどうかは、あなたが決めます」と一致させる -->
+<link rel="stylesheet" href="diagram.css">
+<link rel="stylesheet" href="deepcuts.css">
+<script src="wires.js"></script>
+<style>
+  #fig { width: 800px; height: 760px; }
+  .lane { left: 0; width: 800px; }
+  .lane.ai { border-style: solid; }
+  .lane > .lt { display: flex; align-items: center; gap: 8px; top: 6px; white-space: nowrap; }
+  .lane > .lt img { width: 32px; height: 32px; }
+  .st { width: 164px; height: 128px; padding: 8px 10px; }
+  .st > b { font-size: 18px; line-height: 1.35; white-space: nowrap; }
+  .st > span { white-space: nowrap; }
+  .lbl.ink { color: var(--ink); font-size: 16px; line-height: 24px; }
+  .pt { position: absolute; width: 0; height: 0; }
+</style>
+</head><body>
+<div id="fig">
+  <svg id="wires"></svg>
+
+  <!-- 列は A x 24〜188、B x 220〜384、C x 416〜580、D x 612〜776 -->
+  <!-- 上: あなたが行う操作 -->
+  <div class="lane" style="top:0;height:216px"><span class="lt"><img src="../icons/User.svg">あなたが行う操作</span></div>
+  <div class="st" id="s3" data-self="1" style="left:220px;top:64px"><i>3</i><b>変更を確かめる</b><span><code>git diff</code> と<br>テストと攻撃</span></div>
+  <div class="st hot" id="s8" data-self="1" style="left:612px;top:64px"><i>8</i><b>コミットを<br>決める</b><span><code>git commit</code></span></div>
+
+  <!-- 隙間 y 216〜272 -->
+  <div class="lbl ink" style="left:314px;top:232px">変更</div>
+  <div class="lbl ink" style="left:462px;top:232px">差分スキャンを依頼</div>
+  <div class="lbl ink" style="left:706px;top:232px">表示</div>
+
+  <!-- 中: AI コーディングツール -->
+  <div class="lane ai" style="top:272px;height:216px"><span class="lt"><img src="../icons/Client.svg">AI コーディングツール</span></div>
+  <div class="st" id="s1" data-self="1" style="left:24px;top:336px"><i>1</i><b>Finding を読む</b><span>説明と<br>コードの位置</span></div>
+  <div class="st" id="s2" data-self="1" style="left:220px;top:336px"><i>2</i><b>ファイルを<br>編集する</b><span>1 件ずつ修正する</span></div>
+  <div class="st" id="s4" data-self="1" style="left:416px;top:336px"><i>4</i><b>差分スキャンを<br>始める</b><span><code>--diff-source</code></span></div>
+  <div class="st" id="s7" data-self="1" style="left:612px;top:336px"><i>7</i><b>結果を表示する</b><span>要約して見せる</span></div>
+
+  <!-- 隙間 y 488〜544 -->
+  <div class="lbl ink" style="left:558px;top:504px">ジョブ</div>
+  <div class="lbl ink" style="left:706px;top:504px">結果</div>
+
+  <!-- 下: AWS が自動で行う処理 -->
+  <div class="lane aws" style="top:544px;height:216px"><span class="lt"><img src="../icons/AWSSecurityAgent.svg">AWS が自動で行う処理</span></div>
+  <div class="st" id="s5" data-self="1" style="left:416px;top:608px"><i>5</i><b>変更した行を<br>分析する</b><span>差分スキャン</span></div>
+  <div class="st" id="s6" data-self="1" style="left:612px;top:608px"><i>6</i><b>新しい<br>Finding の有無</b><span>変更した行だけ</span></div>
+
+  <div class="pt" id="c4t" data-self="1" style="left:450px;top:336px"></div>
+  <div class="pt" id="c4b" data-self="1" style="left:546px;top:464px"></div>
+  <div class="pt" id="c5t" data-self="1" style="left:546px;top:608px"></div>
+</div>
+<script>
+window.addEventListener('load', async () => { await document.fonts.ready;
+  wire('#s1', '#s2', {});
+  wire('#s2', '#s3', {from: 't', to: 'b'});
+  wire('#s3', '#c4t', {from: 'r', to: 't', elbow: 'h'});
+  wire('#c4b', '#c5t', {from: 'b', to: 't'});
+  wire('#s5', '#s6', {hot: true});
+  wire('#s6', '#s7', {from: 't', to: 'b'});
+  wire('#s7', '#s8', {from: 't', to: 'b'});
+  document.body.dataset.ready = '1';
+});
+</script>
+</body></html>

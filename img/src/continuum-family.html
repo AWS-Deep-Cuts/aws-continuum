@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<!-- continuum-family: AWS Continuum の主な機能・API の名前・単価と、この記事での扱い（記事「AWS Continuumとは？」の機能の表の直後）。
+     記事の表と同じ 4 つの機能を描く。左の枠は API securityagent の 3 つの機能（記事では Security Agent）、右の枠は API continuum の機能（記事では CV）。
+     根拠:
+     - 単価: AWS Price List の SecAgent の東京リージョン（current/ap-northeast-1/index.json、2026-11-04 取得、effectiveDate 2026-10-01）。
+       使用タイプ APN1-repository-code-review 0.00 USD/時、APN1-Threat-Modeling 0.00 USD/時、APN1-Penetration-Testing 50.00 USD/時（factsheet continuum-167）
+     - Price List のサービスの一覧に Continuum（CV）は無い（continuum-167）。CV の料金が「行数の料金と推論の料金」であることは
+       料金ページの検索の要約（continuum-115・116）。図では記事の表と同じ「Price List に無い」を主に書く
+     - Security Agent が AWS Continuum の一部になったこと、名前が機能の統合に伴って変わりうることは、AWS のセキュリティサービスのベストプラクティス集（continuum-004・006）
+     - CV は Continuum for Code Vulnerabilities の略（continuum-003・005）。記事の表の機能名は「コードの脆弱性の機能」
+     札の文言: コードレビューと脅威モデリングは記事の「この記事とハンズオンの主役」、侵入テストは記事の料金の節の「この記事では扱いません」、
+     CV は記事の表の「仕組みの章で違いを説明する」に合わせる。
+     強調: 主役の 2 枚を差し色の枠。侵入テストと CV は灰色で薄くする。
+     アイコン: SecurityIdentity（AWS Continuum の枠。aws-icons に Continuum の専用のアイコンは無い）、AWSSecurityAgent（Security Agent の枠） -->
+<link rel="stylesheet" href="diagram.css">
+<link rel="stylesheet" href="deepcuts.css">
+<script src="wires.js"></script>
+<style>
+  #fig { width: 800px; height: 392px; }
+  .group > .gl { font-family: var(--font-body); font-size: 17px; font-weight: 900; letter-spacing: 0; white-space: nowrap; }
+  .group > .gl .code { font-family: var(--font-mono); font-weight: 800; font-size: 15px; color: var(--grey); }
+  .group.dashed { border-color: var(--grey); }
+  .card { width: 138px; height: 140px; }
+  .card > .h { font-size: 17px; padding: 6px 0; text-align: center; white-space: nowrap; }
+  .card > .body { text-align: center; padding: 12px 6px 0; }
+  .card .price { display: block; font-family: var(--font-mono); font-weight: 800; font-size: 17px; line-height: 26px; }
+  .card .sub { display: block; font-size: 16px; font-weight: 500; line-height: 22px; }
+  .card .tag2 { display: inline-block; margin-top: 12px; font-size: 16px; font-weight: 900; padding: 2px 10px; background: var(--ink); color: #fff; }
+  .card.hot .tag2 { background: var(--hot); }
+  .card.dim { border-color: var(--line); color: var(--grey); }
+  .card.dim > .h { background: var(--line); color: var(--ink); }
+  .card.dim .tag2 { background: #fff; color: var(--grey); border: 2px solid var(--line); }
+  .group > .gl.noicon { left: 14px; top: 0; height: 30px; }
+  .card .h16 { font-size: 16px; }
+  .txt { position: absolute; font-size: 16px; font-weight: 700; white-space: nowrap; line-height: 24px; }
+</style>
+</head><body>
+<div id="fig">
+  <svg id="wires"></svg>
+
+  <div class="group" style="left:0;top:0;width:800px;height:392px">
+    <div class="gl"><img src="../icons/SecurityIdentity.svg">AWS Continuum</div>
+  </div>
+
+  <!-- 左: API securityagent。中身は x 48〜494 -->
+  <div class="group dashed" style="left:24px;top:64px;width:494px;height:220px">
+    <div class="gl"><img src="../icons/AWSSecurityAgent.svg">Security Agent<span class="code">securityagent</span></div>
+  </div>
+  <div class="card hot" style="left:48px;top:120px"><div class="h">コードレビュー</div><div class="body"><span class="price">0.00 USD/時</span><span class="tag2">主役</span></div></div>
+  <div class="card hot" style="left:202px;top:120px"><div class="h">脅威モデリング</div><div class="body"><span class="price">0.00 USD/時</span><span class="tag2">主役</span></div></div>
+  <div class="card dim" style="left:356px;top:120px"><div class="h">侵入テスト</div><div class="body"><span class="price">50.00 USD/時</span><span class="tag2">扱わない</span></div></div>
+
+  <!-- 右: API continuum。中身は x 566〜752 -->
+  <div class="group dashed" style="left:542px;top:64px;width:234px;height:220px">
+    <div class="gl noicon">CV<span class="code">continuum</span></div>
+  </div>
+  <div class="card dim" style="left:566px;top:120px;width:186px"><div class="h h16">コードの脆弱性の機能</div><div class="body"><span class="sub">Price List に無い</span><span class="tag2">違いを説明</span></div></div>
+
+  <div class="txt" style="left:24px;top:308px">単価は 2026 年 11 月 4 日時点の AWS Price List の東京リージョンの値</div>
+  <div class="txt" style="left:24px;top:340px">名前は機能の統合に伴って変わりうると AWS は注意している</div>
+</div>
+<script>
+window.addEventListener('load', async () => { await document.fonts.ready;
+  document.body.dataset.ready = '1';
+});
+</script>
+</body></html>

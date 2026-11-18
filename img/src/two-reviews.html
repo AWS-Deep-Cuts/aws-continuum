@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<!-- two-reviews: AI だけのレビューと、AI コーディングツールから Security Agent に依頼する場合の流れの違い
+     （記事「仕組み」の冒頭、README 手順 3。README 手順 9 でも見直す）。
+     左の枠（灰色の実線）は AI だけのレビューで、すべて AI コーディングツールが行う。
+     右の枠（灰色の実線、見出し「Security Agent に依頼する」）は AI コーディングツール ＋ Security Agent。1 の依頼と 4 の要約は AI コーディングツール、
+     2 の分析と 3 の記録は AWS 側の Security Agent が行うため、2 と 3 だけを差し色の点線の枠「AWS が自動で行う処理」に入れる。
+     記事の説明「1 の依頼と 4 の要約を AI コーディングツールが行い、2 の分析と 3 の記録を AWS 側の Security Agent が行います」と一致させる。
+     根拠:
+     - 左: README 手順 3 の依頼文（ファイルを読むだけで判断する。外部のサービスやツールは使わない。結果を ~/deepcuts-results/ai-only-review.md に保存し、
+       確信の度合いを高・中・低で表す）。「再現は試していない」は README 手順 3 の「ここから分かること」と同じ。
+       この図は記事の「仕組み」の章にも載るため、ハンズオンのファイル名 ai-only-review.md と「予想では」は書かない。
+       4 の「依頼の文しだいでファイルにも保存できる」は、README 手順 3 の依頼文がファイルへの保存を頼んでいることに基づく。
+       「結果はすぐに返る」は DESIGN の「AI だけのレビューは、ファイルを読むだけで、すぐに指摘を返す」と同じ。所要時間はハンズオンで計る
+     - 右 1: zip を S3 バケットにアップロードし、AWS CLI でスキャンを依頼する（skills/scanning-with-aws-security-agent/SKILL.md 74〜160 行目、factsheet continuum-159）
+     - 右 2: Security Agent がサービスロールでバケットの zip を読む（continuum-160）
+     - 右 3: Finding は findingId を持ち、確信度 confidence と検証の状態 validationStatus を持つ（continuum-165）
+     - 右 4: AI に返る要約に載らない項目がある（continuum-166。記事の「Finding を読む」の節）
+     - 右 5: フルスキャンの所要時間は、スキルの記述で約 45 分、ユーザーガイドによると約 1 時間（continuum-179）
+     線はすべて垂直。右の線は、内側の枠の見出し（x 約 700 まで）を避けて x=740 に引く。
+     強調: 右の 3 だけ差し色。所要時間の箱は黒で塗る -->
+<link rel="stylesheet" href="diagram.css">
+<link rel="stylesheet" href="deepcuts.css">
+<script src="wires.js"></script>
+<style>
+  #fig { width: 800px; height: 688px; }
+  .lane.ai { border-style: solid; }
+  .lane > .lt { display: flex; align-items: center; gap: 8px; top: 6px; white-space: nowrap; }
+  .lane > .lt img { width: 32px; height: 32px; }
+  .st { height: 72px; padding: 8px 12px; }
+  .st > b { font-size: 18px; line-height: 24px; margin-top: 0; white-space: nowrap; }
+  .st > span { margin-top: 2px; line-height: 22px; white-space: nowrap; }
+  .st code { font-size: 15px; }
+  .st.ink { height: 48px; display: flex; align-items: center; justify-content: center; }
+  .st.ink > b { color: #fff; }
+  .pt { position: absolute; width: 0; height: 0; }
+</style>
+</head><body>
+<div id="fig">
+  <svg id="wires"></svg>
+
+  <div class="rowl" style="left:0;top:0">同じ AI コーディングツールに同じ作業フォルダーを渡す</div>
+
+  <!-- 左: AI だけのレビュー。箱は x 24〜352 -->
+  <div class="lane ai" style="left:0;top:48px;width:376px;height:640px"><span class="lt"><img src="../icons/Client.svg">AI だけのレビュー</span></div>
+  <div class="st" id="l1" data-self="1" style="left:24px;top:112px;width:328px"><b>1 作業フォルダーを読む</b><span>外部のサービスは使わない</span></div>
+  <div class="st" id="l2" data-self="1" style="left:24px;top:280px;width:328px"><b>2 会話の中で判断する</b><span>再現は試していない</span></div>
+  <div class="st" id="l3" data-self="1" style="left:24px;top:384px;width:328px"><b>3 指摘を文章で返す</b><span>確信の度合いも文章で返す</span></div>
+  <div class="st" id="l4" data-self="1" style="left:24px;top:512px;width:328px"><b>4 結果は会話に残る</b><span>依頼の文しだいでファイルにも保存できる</span></div>
+  <div class="st ink" id="l5" data-self="1" style="left:24px;top:616px;width:328px"><b>結果はすぐに返る</b></div>
+
+  <!-- 右: AI コーディングツール ＋ Security Agent。外の箱は x 448〜776、内側の枠の箱は x 472〜752 -->
+  <div class="lane ai" style="left:424px;top:48px;width:376px;height:640px"><span class="lt"><img src="../icons/Client.svg">Security Agent に依頼する</span></div>
+  <div class="st" id="r1" data-self="1" style="left:448px;top:112px;width:328px"><b>1 AWS CLI で依頼する</b><span>zip をバケットにアップロード</span></div>
+  <div class="lane aws" style="left:448px;top:216px;width:328px;height:264px"><span class="lt"><img src="../icons/AWSSecurityAgent.svg">AWS が自動で行う処理</span></div>
+  <div class="st" id="r2" data-self="1" style="left:472px;top:280px;width:280px"><b>2 AWS の中で分析する</b><span>サービスロールで zip を読む</span></div>
+  <div class="st hot" id="r3" data-self="1" style="left:472px;top:384px;width:280px"><b>3 Finding を記録する</b><span>ID と確信度と検証の状態</span></div>
+  <div class="st" id="r4" data-self="1" style="left:448px;top:512px;width:328px"><b>4 要約を返す</b><span>要約に載らない項目がある</span></div>
+  <div class="st ink" id="r5" data-self="1" style="left:448px;top:616px;width:328px"><b>フルスキャンは約 45 分〜1 時間</b></div>
+
+  <div class="pt" id="r1b" data-self="1" style="left:740px;top:184px"></div><div class="pt" id="r2t" data-self="1" style="left:740px;top:280px"></div>
+  <div class="pt" id="r2b" data-self="1" style="left:740px;top:352px"></div><div class="pt" id="r3t" data-self="1" style="left:740px;top:384px"></div>
+  <div class="pt" id="r3b" data-self="1" style="left:740px;top:456px"></div><div class="pt" id="r4t" data-self="1" style="left:740px;top:512px"></div>
+  <div class="pt" id="r4b" data-self="1" style="left:740px;top:584px"></div><div class="pt" id="r5t" data-self="1" style="left:740px;top:616px"></div>
+</div>
+<script>
+window.addEventListener('load', async () => { await document.fonts.ready;
+  wire('#l1', '#l2', {from: 'b', to: 't'}); wire('#l2', '#l3', {from: 'b', to: 't'});
+  wire('#l3', '#l4', {from: 'b', to: 't'}); wire('#l4', '#l5', {from: 'b', to: 't'});
+  wire('#r1b', '#r2t', {from: 'b', to: 't'}); wire('#r2b', '#r3t', {from: 'b', to: 't', hot: true});
+  wire('#r3b', '#r4t', {from: 'b', to: 't'}); wire('#r4b', '#r5t', {from: 'b', to: 't'});
+  document.body.dataset.ready = '1';
+});
+</script>
+</body></html>

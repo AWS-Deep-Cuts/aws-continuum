@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<!-- overview: あなたの PC の AI コーディングツールから、東京リージョンの Security Agent に依頼する全体像
+     （記事「AWS Continuumとは？」、README「ハンズオンのゴール」）。上の枠はあなたの PC、下の枠は AWS の東京リージョン。
+     記事の説明の順: あなたが依頼する → AI コーディングツールがプラグインのスキルを読み込み、手順に従う → AWS CLI のコマンドを 1 つずつ実行する
+     （Claude Code は既定の設定で、実行の前にあなたに許可を求める）→ 作業フォルダーを zip にまとめて S3 バケットにアップロードする
+     → Security Agent がサービスロールを引き受けてバケットの zip を読む → Finding を記録する → AI コーディングツールが AWS CLI で Finding を取り出し、
+     要約して表示し、作業フォルダーの .security-agent/ にレポートを書き込む → あなたが要約とレポートを読む。
+     根拠:
+     - プラグイン aws-agents-for-devsecops のスキルは、AI コーディングツールに aws securityagent などの AWS CLI のコマンドを順に実行させる手順書で、
+       分析は AWS 側の Security Agent が行う（factsheet continuum-159。skills/scanning-with-aws-security-agent/SKILL.md 74〜160 行目）
+     - 準備のスキルが、エージェントスペース・サービスロール SecurityAgentScanRole・S3 バケットを作成し、ロールとバケットをエージェントスペースに登録する（continuum-160）
+     - サービスロールの信頼ポリシーのプリンシパルは securityagent.amazonaws.com。許可はバケットの読み取り（s3:GetObject など）（continuum-160）。
+       そのため、線は「Security Agent → サービスロール（引き受ける）」「サービスロール → S3 バケット（読む）」の 2 本で描く
+     - コードレビュー・脅威モデル・Finding はエージェントスペースに属する（API の CreateCodeReview・CreateThreatModel・ListFindings が agentSpaceId を取る）
+     - Finding の確信度 confidence と検証の状態 validationStatus（continuum-165）。脅威は STRIDE で分類される（continuum-162）
+     - リージョンは東京 ap-northeast-1（continuum-169。NEEDS_NUANCE。記事と README は <!- - 要確認 - -> を付けている）
+     表記: 箱の名前は記事の用語（AI コーディングツール・プラグインのスキル・作業フォルダー・エージェントスペース・サービスロール・Finding）。
+     作業フォルダーの .security-agent/ へのレポートの書き込みは、箱の補足の「レポートの保存先」で示す。
+     zip にまとめて送るのは AI コーディングツールなので、作業フォルダーの箱は「スキャンの対象」と書き、矢印のラベルは「zip の元」にする。
+     線はすべて水平か垂直。枠をまたぐ線（x=400 と x=480）は、AWS Cloud の見出し（x 約 130 まで）と東京リージョンの見出し（x 約 310 まで）から離れている。
+     強調: Finding の箱だけ差し色 -->
+<link rel="stylesheet" href="diagram.css">
+<link rel="stylesheet" href="deepcuts.css">
+<script src="wires.js"></script>
+<style>
+  #fig { width: 800px; height: 936px; }
+  .group > .gl { font-family: var(--font-body); font-size: 17px; font-weight: 900; letter-spacing: 0; white-space: nowrap; }
+  .group > .gl .code { font-family: var(--font-mono); font-weight: 800; font-size: 15px; color: var(--grey); }
+  .group.region { border: 2px dashed #00a4a6; }
+  .group > .gl.noicon { left: 14px; top: 0; height: 30px; }
+  .box { flex-direction: column; font-size: 17px; font-weight: 900; border-width: 3px; }
+  .box small { font-size: 16px; font-weight: 500; line-height: 1.35; }
+  .box code { font-family: var(--font-mono); font-weight: 800; font-size: 15px; }
+  .box.hot small { color: #fff; }
+  .lbl.ink { color: var(--ink); font-size: 16px; }
+  .pt { position: absolute; width: 0; height: 0; }
+</style>
+</head><body>
+<div id="fig">
+  <svg id="wires"></svg>
+
+  <!-- あなたの PC。列は A x 24〜216、B x 288〜512、C x 592〜776。B の中心 x=400 を S3 バケットの中心にそろえる -->
+  <div class="group" style="left:0;top:0;width:800px;height:296px">
+    <div class="gl"><img src="../icons/Client.svg">あなたの PC</div>
+  </div>
+  <!-- あなた: アイコンの中心の高さを 1 段目の箱の中心（y=96）にそろえる -->
+  <div class="node" id="you" style="left:45px;top:68px"><img src="../icons/User.svg"><div class="t">あなた</div></div>
+  <div class="box" id="ai" style="left:288px;top:56px;width:224px;height:80px">AI コーディングツール<small>Claude Code など</small></div>
+  <div class="box" id="skill" style="left:592px;top:56px;width:184px;height:80px">プラグインのスキル<small><code>SKILL.md</code> の手順</small></div>
+  <div class="box" id="cli" style="left:288px;top:192px;width:224px;height:80px">AWS CLI<small>あなたが承認して実行</small></div>
+  <div class="box" id="ws" style="left:592px;top:192px;width:184px;height:80px">作業フォルダー<small>スキャンの対象<br>レポートの保存先</small></div>
+
+  <!-- あなた ⇄ AI コーディングツール: 依頼（上の線）と要約（下の線） -->
+  <div class="pt" id="ya" data-self="1" style="left:148px;top:84px"></div><div class="pt" id="aa" data-self="1" style="left:288px;top:84px"></div>
+  <div class="pt" id="yb" data-self="1" style="left:148px;top:108px"></div><div class="pt" id="ab" data-self="1" style="left:288px;top:108px"></div>
+  <div class="lbl ink" style="left:196px;top:52px">依頼</div>
+  <div class="lbl ink" style="left:196px;top:116px">要約</div>
+  <div class="lbl ink" style="left:532px;top:62px">手順</div>
+  <div class="lbl ink" style="left:412px;top:152px">実行</div>
+  <div class="lbl ink" id="zl" style="left:518px;top:198px">zip の元</div>
+
+  <!-- 2 つの枠の隙間 y 296〜368 -->
+  <div class="lbl ink" style="left:236px;top:320px">zip をアップロード</div>
+  <div class="lbl ink" style="left:492px;top:308px;line-height:24px">スキャンを依頼し<br>Finding を取り出す</div>
+
+  <!-- AWS Cloud ＞ 東京リージョン -->
+  <div class="group cloud" style="left:0;top:368px;width:800px;height:568px">
+    <div class="gl"><img src="../icons/AWSCloudlogo.svg">AWS Cloud</div>
+  </div>
+  <div class="group region" style="left:24px;top:424px;width:752px;height:488px">
+    <div class="gl"><img src="../icons/Region.svg">東京リージョン<span class="code">ap-northeast-1</span></div>
+  </div>
+  <div class="node" id="role" style="left:165px;top:488px"><img src="../icons/AWSIdentityAccessManagementRole.svg"><div class="t">サービスロール</div></div>
+  <div class="node" id="s3" style="left:325px;top:488px"><img src="../icons/AmazonSimpleStorageServiceBucketWithObjects.svg"><div class="t">S3 バケット</div><div class="s">zip と仕様書</div></div>
+  <div class="lbl ink" style="left:302px;top:482px">読む</div>
+  <div class="lbl ink" style="left:252px;top:596px">引き受ける</div>
+
+  <div class="group" id="sa" style="left:48px;top:640px;width:704px;height:248px">
+    <div class="gl"><img src="../icons/AWSSecurityAgent.svg">Security Agent</div>
+  </div>
+  <div class="pt" id="saR" data-self="1" style="left:240px;top:640px"></div>
+  <div class="pt" id="saC" data-self="1" style="left:480px;top:640px"></div>
+  <div class="pt" id="cliC" data-self="1" style="left:480px;top:272px"></div>
+  <div class="group dashed" style="left:72px;top:696px;width:656px;height:168px">
+    <div class="gl noicon">エージェントスペース</div>
+  </div>
+  <div class="box" id="cr" style="left:96px;top:752px;width:176px;height:88px">コードレビュー<small>フルスキャンと<br>差分スキャン</small></div>
+  <div class="box hot" id="fd" style="left:312px;top:752px;width:176px;height:88px">Finding<small>確信度と<br>検証の状態</small></div>
+  <div class="box" id="tm" style="left:528px;top:752px;width:176px;height:88px">脅威モデル<small>STRIDE で<br>分類した脅威</small></div>
+</div>
+<script>
+window.addEventListener('load', async () => { await document.fonts.ready;
+  wire('#ya', '#aa', {from: 'r', to: 'l'});
+  wire('#ab', '#yb', {from: 'l', to: 'r'});
+  wire('#skill', '#ai', {from: 'l', to: 'r'});
+  wire('#ai', '#cli', {from: 'b', to: 't'});
+  wire('#ws', '#cli', {from: 'l', to: 'r'});
+  wire('#cli', '#s3', {from: 'b', to: 't'});
+  wire('#cliC', '#saC', {from: 'b', to: 't', both: true});
+  wire('#role', '#s3', {from: 'r', to: 'l'});
+  wire('#saR', '#role', {from: 't', to: 'b'});
+  wire('#cr', '#fd', {});
+  document.body.dataset.ready = '1';
+});
+</script>
+</body></html>
