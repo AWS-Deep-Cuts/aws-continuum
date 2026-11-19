@@ -5,12 +5,12 @@
 
 解説記事の原稿は [article/aws-continuum.md](./article/aws-continuum.md) にあります。
 
-<!-- TODO（公開前に著者が確認）: 次の 4 つを実機で確かめるまで、この README を公開しない。(1) 東京で、プラグインの準備・フルスキャン・差分スキャン・脅威モデリングが通ること。通らなければ us-east-1 で行い、リージョンの記述を修正する。(2) コンソールで Security Agent を一度も設定していないアカウントで、手順 4 の準備が通るか。(3) 後片付けの翌日の請求で、使用タイプ APN1-repository-code-review と APN1-Threat-Modeling が 0.00 USD で計上されていること。(4) Claude Code でのプラグインの導入の表示と、スキルが実際に実行したコマンド。手順 4・5・7・8 のコマンドの表を、実際のコマンドに合わせて修正する -->
+<!-- TODO（公開前に著者が確認）: 次の 2 つを実機で確かめるまで、この README を公開しない（東京でプラグインの準備・フルスキャン・差分スキャン・脅威モデリングが通ること、コンソールで Security Agent を一度も設定していないアカウントで手順 4 の準備が通ることは、2026 年 11 月 18 日の検証で確かめた）。(3) 後片付けの翌日の請求で、使用タイプ APN1-repository-code-review と APN1-Threat-Modeling が 0.00 USD で計上されていること。(4) Claude Code でのプラグインの導入の表示と、スキルが実際に実行したコマンド。手順 4・5・7・8 のコマンドの表を、実際のコマンドに合わせて修正する -->
 
 > **Note**: AWS Continuum は、セキュリティの作業を行う AWS の AI エージェントの機能をまとめた総称です。AWS の発表によると、2026 年 6 月に発表されました。AWS の公式のガイドは、製品とコンソールの名前は、機能の統合に伴って変わりうると注意しています。
 > - このハンズオンの主役は、AWS Continuum に含まれる AWS Security Agent の **コードレビュー** と **脅威モデリング** です。この README では、AWS Security Agent を Security Agent と書きます。Security Agent の API と AWS CLI のコマンドの名前は `securityagent` です。
 > - 操作は、あなたの PC のターミナルと、あなたが普段使っている AI コーディングツールで行います。AI コーディングツールは、コードを読み書きし、コマンドの実行まで行う AI のツールです。この README の手順は、Claude Code で書いています。Claude Code では、AWS が公式に公開しているプラグイン `aws-agents-for-devsecops` を使います。Kiro については、[Kiro で行う場合](#kiro-で行う場合) で、公式の資料に書かれている方法を紹介します。
-> - リージョンは東京 `ap-northeast-1` です。2026 年 11 月 4 日の時点で、Security Agent の API のエンドポイントは東京にあり、AWS Price List にも東京のコードレビューと脅威モデリングの単価があります。<!-- 要確認: 東京でコードレビューと脅威モデリングを使えるか。機能ごとの提供リージョンの表は確かめられていない -->
+> - リージョンは東京 `ap-northeast-1` です。2026 年 11 月 4 日の時点で、Security Agent の API のエンドポイントは東京にあり、AWS Price List にも東京のコードレビューと脅威モデリングの単価があります。2026 年 11 月 18 日の検証では、東京で、準備・フルスキャン・差分スキャン・脅威モデリングのすべてが完了しました。
 > - AWS CLI は、Security Agent の脅威モデリング・差分スキャン・予算の上限に対応した v2.36.23 以降が必要です。
 
 > ⚠️ **コストに関する注意**
@@ -69,7 +69,7 @@ AI コーディングツールは、プラグインのスキルに書かれた�
 | 部分 | 目安 | 待つ間にできること |
 | --- | --- | --- |
 | 手順 1〜4 | 約 45 分 | |
-| 手順 5 のフルスキャン | スキルの記述で約 45 分、ユーザーガイドによると約 1 時間 <!-- 要確認: 著者の実測。ユーザーガイドの所要時間は検索の要約で確かめた値 --> | AI コーディングツールに「確認をやめて」と頼み、PC を離れてよい。スキャンは AWS の中で進む |
+| 手順 5 のフルスキャン | スキルの記述で約 45 分、ユーザーガイドによると約 1 時間。2026 年 11 月 18 日の検証では、ジョブの作成から完了まで約 30 分 <!-- 要確認: ユーザーガイドの所要時間は検索の要約で確かめた値 --> | AI コーディングツールに「確認をやめて」と頼み、PC を離れてよい。スキャンは AWS の中で進む |
 | 手順 6 | 約 20 分 | |
 | 手順 7 | 約 30 分。差分スキャンは、スキルの記述で数分、ユーザーガイドによると 5〜15 分 | |
 | 手順 8 | ユーザーガイドによると脅威モデリングは 5〜30 分。結果を読むのに約 15 分 | |
@@ -187,7 +187,7 @@ bash ./make-workspace.sh
 | 確かめること | 方法 | 止まる条件 |
 | --- | --- | --- |
 | リージョンの環境変数 | `AWS_REGION` と `AWS_DEFAULT_REGION` | `AWS_REGION` が無い。2 つの値が違う |
-| 道具 | `aws`・`git`・`python3`・`zip`・`curl` | どれかが無い。`md5sum` が無いときは警告だけ |
+| 道具 | `aws`・`git`・`python3`・`zip`・`curl` | どれかが無い。Python が 3.9 より古い。`md5sum` が無いときは警告だけ |
 | 認証情報 | `aws sts get-caller-identity` | 失敗する |
 | AWS CLI の機能 | `create-threat-model`、`start-code-review-job` の `--diff-source`、`create-code-review` の `maxTaskHours` と `validationMode` があるか。接続せずに確かめる | どれかが無い |
 | **Security Agent の単価** | AWS Price List の東京の価格表 | コードレビューか脅威モデリングの単価が $0.00 でない |
@@ -199,7 +199,7 @@ bash ./make-workspace.sh
 | 変数 | 中身 | 使う手順 |
 | --- | --- | --- |
 | `REGION` | リージョン `ap-northeast-1` | すべて |
-| `ACCOUNT_ID` | AWS アカウントの ID | 4・5 |
+| `ACCOUNT_ID` | AWS アカウントの ID | 4・5・7 |
 | `PRECHECK_AT` | `precheck.sh` を実行した日時。協定世界時 | 10 |
 | `PRICE_PUBLICATION` | 確かめた Price List の公開日時 | 1 |
 | `SCAN_BUCKET` | プラグインが使うバケットの名前 `security-agent-scans-<アカウント ID>-<リージョン>` | 4・5・7・8 |
@@ -421,7 +421,7 @@ AGENT_SPACE_ID=$(python3 -c 'import json; print(json.load(open(".security-agent/
 aws securityagent list-agent-spaces --query 'agentSpaceSummaries[].{name:name,id:agentSpaceId}' --output table
 ```
 
-一覧に、`AGENT_SPACE_ID` と同じ ID で、名前が `deepcuts-record-shop` のエージェントスペースがあることを確かめます。名前が `security-scans` になっていても、ハンズオンは続けられます。`cleanup.sh` は、どちらの名前でも消します。
+一覧に、`AGENT_SPACE_ID` と同じ ID で、名前が `deepcuts-record-shop` のエージェントスペースがあることを確かめます。エージェントスペースの ID は、`as-a1b2c3d4-5678-90ab-cdef-EXAMPLE11111` のように `as-` で始まります。この後の手順で取り出す ID も、コードレビューは `cr-`、ジョブは `cj-`、Finding は `f-`、脅威モデルは `tm-`、脅威モデリングのジョブは `tj-`、脅威は `t-` で始まります。名前が `security-scans` になっていても、ハンズオンは続けられます。`cleanup.sh` は、どちらの名前でも消します。
 
 次に、エージェントスペースに登録されたロールとバケットを確かめます。
 
@@ -480,7 +480,7 @@ AWS Security Agent で、このディレクトリのフルスキャンを実行�
 | AI コーディングツールが実行するコマンド | AWS に依頼すること | AWS の中で起きること |
 | --- | --- | --- |
 | `zip -r /tmp/source.zip . -x ".git/*" -x ".security-agent/*" ...` | なし。作業フォルダーを zip にする | 何も起きない |
-| `aws s3 cp /tmp/source.zip s3://<バケット>/security-scans/source/<作業フォルダーの ID>/source.zip --expected-bucket-owner <アカウント ID>` | zip をバケットに保存する | バケットに zip が保存される |
+| `aws s3api put-object --bucket <バケット> --key security-scans/source/<作業フォルダーの ID>/source.zip --body /tmp/source.zip --expected-bucket-owner <アカウント ID>`（スキルに書かれている `aws s3 cp ... --expected-bucket-owner` は失敗するため、置き換えたもの。下の Note を参照） | zip をバケットに保存する | バケットに zip が保存される |
 | `aws securityagent create-code-review --agent-space-id ... --title ... --service-role ... --assets sourceCode=[{s3Location=...}]` | コードレビューを作成する | コードレビューが作成され、ID が返る。2 回目以降は作らずに再利用する |
 | `aws securityagent start-code-review-job --agent-space-id ... --code-review-id ...` | スキャンを始める | ジョブが作成され、Security Agent が分析を始める |
 | `aws securityagent batch-get-code-review-jobs ...` を 5 分ごと | ジョブの状態を返す | 何も作らない |
@@ -488,7 +488,13 @@ AWS Security Agent で、このディレクトリのフルスキャンを実行�
 
 作業フォルダーの ID は、作業フォルダーの絶対パスから `md5sum` で作成する 12 桁の値です。zip のコマンドを承認する前に、除外する対象と、zip に入るファイルを読んでください。作業フォルダーの中のファイルは、`.git/` と `.security-agent/` などを除いて、すべて Security Agent に送られます。
 
-> **Note**: 筆者が AWS CLI 2.39.0 で、接続せずにパラメータの検証だけを試したところ、`aws s3 cp` は `--expected-bucket-owner` を受け付けず、`Unknown options` で止まりました。この場合、AI コーディングツールが、別のコマンドに置き換えて続けることがあります。たとえば、`aws s3api put-object --bucket ... --key ... --body ... --expected-bucket-owner ...` は、このオプションを受け付けます。置き換えたコマンドを承認する前に、`--expected-bucket-owner` が付いているかを読んでください。<!-- 要確認: 著者の実機で、AI がどう置き換えたか。表の 2 行目を実際のコマンドに修正する -->
+> **Note**: プラグインのスキルには、zip の保存のコマンドとして `aws s3 cp /tmp/source.zip s3://<バケット>/security-scans/source/<作業フォルダーの ID>/source.zip --expected-bucket-owner <アカウント ID>` が書かれています。しかし、`aws s3 cp` は `--expected-bucket-owner` を受け付けません。AWS CLI 2.39.0（筆者が接続せずにパラメータの検証だけを試した版）でも、2.41.0（2026 年 11 月 18 日の検証で実際に実行した版）でも、次のエラーで止まりました。
+>
+> ```text
+> aws: [ERROR]: An error occurred (ParamValidation): Unknown options: --expected-bucket-owner, <アカウント ID>
+> ```
+>
+> この場合、AI コーディングツールが、別のコマンドに置き換えて続けることがあります。このオプションを受け付けるのは、表の 2 行目の `aws s3api put-object` です。2026 年 11 月 18 日の検証でも、このコマンドで保存し、スキャンが完了しました。AI コーディングツールが `aws s3 cp` で止まった場合や、`--expected-bucket-owner` を外して続けようとした場合は、Claude Code に「`aws s3 cp` の代わりに、`--expected-bucket-owner` を付けた `aws s3api put-object` で保存してください」と頼んでください。置き換えたコマンドを承認する前に、`--expected-bucket-owner` が付いているかを読んでください。差分スキャン（手順 7）と脅威モデリング（手順 8）のアップロードも同じです。
 
 スキャンが始まると、AI コーディングツールは 5 分ごとに状態を確かめます。この確認も、AI コーディングツールの利用量を使います。「確認をやめて」と頼んでもかまいません。スキャンは AWS の中で進むため、後で「スキャンの結果を見せて」と頼めば、AI コーディングツールが Finding を取り出します。
 
@@ -504,11 +510,23 @@ aws securityagent batch-get-code-reviews --agent-space-id "${AGENT_SPACE_ID}" --
   --query 'codeReviews[0].{title:title,validationMode:validationMode,remediation:codeRemediationStrategy,maxTaskHours:maxTaskHours,source:assets.sourceCode[0].s3Location}'
 ```
 
+2026 年 11 月 18 日の検証での出力は、次のとおりです。プラグインのスキルは `validationMode`・`remediation`・`maxTaskHours` のどれも指定しないため、3 つとも値が無く、`null` と表示されました。
+
+```json
+{
+    "title": "pre-cr-main",
+    "validationMode": null,
+    "remediation": null,
+    "maxTaskHours": null,
+    "source": "s3://security-agent-scans-<アカウント ID>-ap-northeast-1/security-scans/source/<作業フォルダーの ID>/source.zip"
+}
+```
+
 | 項目 | 意味 |
 | --- | --- |
 | `title` | コードレビューの名前。スキルの既定は `pre-cr-<git のブランチ>` |
 | `validationMode` | **検証の方式**。Finding ごとに、シミュレーションによる検証を行うかを決める。値は `DISABLED` か `SIMULATED`。API の仕様に既定値は書かれておらず、プラグインのスキルはこの値を指定しない |
-| `remediation` | Security Agent が修正を自動で行うか。値は `AUTOMATIC` か `DISABLED` |
+| `remediation` | Security Agent が修正を自動で行うか。値は `AUTOMATIC` か `DISABLED`。値が無いと `null` と表示される |
 | `maxTaskHours` | **予算の上限**。タスク時間がこの値に達すると、ジョブを止める。API の仕様によると、指定しなければ上限は無い |
 | `source` | Security Agent が読む zip の場所 |
 
@@ -537,7 +555,7 @@ aws securityagent batch-get-code-review-jobs --agent-space-id "${AGENT_SPACE_ID}
 }
 ```
 
-API の仕様によると、ジョブは `PREFLIGHT`・`STATIC_ANALYSIS`・`FINALIZING` などの段階を進みます。段階の名前の一覧には `VALIDATION` もあります。どの段階が表示されたかを記録してください。ジョブの状態は、最後に `COMPLETED`・`FAILED`・`STOPPED` のどれかになります。待つ間は、このコマンドを 10 分ほどおきに実行してください。AI コーディングツールが確認を続けている場合は、実行しなくてもかまいません。
+API の仕様によると、ジョブは `PREFLIGHT`・`STATIC_ANALYSIS`・`FINALIZING` などの段階を進みます。段階の名前の一覧には `VALIDATION` もあります。どの段階が表示されたかを記録してください。ジョブの状態は、最後に `COMPLETED`・`FAILED`・`STOPPED` のどれかになります。ジョブが終わったかは、段階の状態ではなく、`status` で判断してください。2026 年 11 月 18 日の検証では、`status` が `COMPLETED` になった時点で、`FINALIZING` の段階は、フルスキャンでは `IN_PROGRESS`、差分スキャンでは `NOT_STARTED` のままでした。待つ間は、このコマンドを 10 分ほどおきに実行してください。AI コーディングツールが確認を続けている場合は、実行しなくてもかまいません。
 
 バケットに保存された zip も確かめます。
 
@@ -555,7 +573,7 @@ aws s3api list-objects-v2 --bucket "${SCAN_BUCKET}" --prefix security-scans/ --e
 
 > **この手順で確かめること**
 > - **やること**: 上のコマンドで、コードレビューの設定と、ジョブの状態と段階を確かめます。ジョブが終わったら、`createdAt` と `updatedAt` の差から、所要時間を採点表 2 に記録します。
-> - **期待する結果**: ジョブの状態が最後に `COMPLETED` になります。`FAILED` になった場合は、[トラブルシューティング](#トラブルシューティング)を確認してください。`validationMode` と `maxTaskHours` の値を記録します。プラグインはどちらも指定しないため、値が無いか、Security Agent の既定値が表示される見込みです。
+> - **期待する結果**: ジョブの状態が最後に `COMPLETED` になります。`FAILED` になった場合は、[トラブルシューティング](#トラブルシューティング)を確認してください。`validationMode` と `maxTaskHours` の値を記録します。プラグインはどちらも指定しないため、2026 年 11 月 18 日の検証では、どちらも `null` でした。
 > - **ここから分かること**: 分析は AWS の中で行われます。AI コーディングツールが行ったのは、zip を保存し、ジョブを依頼し、終わるのを待つことです。
 
 ## ６．Finding を読む
@@ -570,12 +588,12 @@ aws s3api list-objects-v2 --bucket "${SCAN_BUCKET}" --prefix security-scans/ --e
 | --- | --- | --- |
 | `riskLevel` | 深刻度 | 影響の大きさ。`UNKNOWN`・`INFORMATIONAL`・`LOW`・`MEDIUM`・`HIGH`・`CRITICAL` |
 | `confidence` | 確信度 | 本物の脆弱性である見込み。`FALSE_POSITIVE`・`UNCONFIRMED`・`LOW`・`MEDIUM`・`HIGH` |
-| `validationStatus` | 検証の状態 | API の説明では、シミュレーションによる検証の状態。`CONFIRMED`・`NOT_REPRODUCED`・`VALIDATION_FAILED`・`VALIDATING`・`NOT_VALIDATED` |
+| `validationStatus` | 検証の状態 | API の説明では、シミュレーションによる検証の状態。`CONFIRMED`・`NOT_REPRODUCED`・`VALIDATION_FAILED`・`VALIDATING`・`NOT_VALIDATED`。2026 年 11 月 18 日の検証では、検証の方式（`validationMode`）を指定しないコードレビューの Finding に、この項目自体がありませんでした |
 | `attackScript` | 攻撃スクリプト | API の説明では、Finding を再現するために使ったスクリプト |
-| `verificationScript` | 検証スクリプト | 利用者が自分で再現するためのスクリプトの入手先と手順 |
+| `verificationScript` | 検証スクリプト | 利用者が自分で再現するためのスクリプトの入手先と手順。2026 年 11 月 18 日の検証では、どの Finding にもありませんでした |
 | `reasoning` | 判断の理由 | Security Agent がそう判断した理由 |
 | `remediationCode` | 修正の提案 | 修正の説明とコードの例 |
-| `codeLocations` | コードの位置 | ファイル・行と、`source` や `sink` の札。source は攻撃者の入力がプログラムに入る場所、sink はその入力が危険な処理に届く場所 |
+| `codeLocations` | コードの位置 | ファイル・行と、`source` や `sink` の札。source は攻撃者の入力がプログラムに入る場所、sink はその入力が危険な処理に届く場所。札は `sink: string-concatenated SQL ...` のような説明の文で、`anchor`（指摘の中心）や `supporting`（裏付け）の札もある |
 
 ### 6-1. AI の要約を読む
 
@@ -590,12 +608,28 @@ cat .security-agent/findings-*.md
 
 ### 6-2. API の応答を読む
 
-5-2 のジョブの状態が `COMPLETED` であることを確かめてから、ターミナル 2 で、このスキャンの Finding の一覧を表示します。`list-findings` の一覧にも、深刻度・確信度・検証の状態が入っています。
+5-2 のジョブの状態が `COMPLETED` であることを確かめてから、ターミナル 2 で、このスキャンの Finding の一覧を表示します。`list-findings` の一覧にも、深刻度・確信度が入っています。検証の状態は、検証の方式を指定したコードレビューでだけ入ります。
 
 ```bash
 aws securityagent list-findings --agent-space-id "${AGENT_SPACE_ID}" --code-review-job-id "${JOB_ID_FULL}" \
   --query 'findingsSummaries[].{name:name,risk:riskLevel,confidence:confidence,validation:validationStatus,status:status}' --output table
 ```
+
+2026 年 11 月 18 日の検証での出力の一部は、次のとおりです。Finding は 9 件でした。列は項目の名前の順に並ぶため、`--query` に書いた順とは並びが変わります。
+
+```text
++------------+--------------------------------------------------------------------------------------------+-----------+---------+-------------+
+| confidence |                                           name                                             |   risk    | status  | validation  |
++------------+--------------------------------------------------------------------------------------------+-----------+---------+-------------+
+|  HIGH      |  Unauthenticated SQL injection in GET /records?q= exfiltrates customer PII via UNION       |  CRITICAL |  ACTIVE |  None       |
+|  HIGH      |  Path traversal / arbitrary file read via untrusted partner CSV jacket field, ...           |  HIGH     |  ACTIVE |  None       |
+|  HIGH      |  [Requirement: ASA Base Pack/authorization-best-practices] No access controls; ...          |  HIGH     |  ACTIVE |  None       |
+|  MEDIUM    |  Log/terminal escape injection via unsanitized request line in log_message (CWE-117)       |  LOW      |  ACTIVE |  None       |
+|  ...       |  ...                                                                                       |  ...      |  ...    |  ...        |
++------------+--------------------------------------------------------------------------------------------+-----------+---------+-------------+
+```
+
+`validation` の列の `None` は、`validationStatus` の項目が無いことを示します。検証の方式を指定しないコードレビューでは、`NOT_VALIDATED` ではなく、項目自体がありません。名前が `[Requirement: ASA Base Pack/...]` で始まる Finding は、認証・認可・暗号化・監査ログ・ログの保護・secure-by-default などの、AWS が用意した要件のまとまり（ASA Base Pack）に照らした指摘です。2026 年 11 月 18 日の検証では、9 件のうち 6 件がこの形でした。手順 2 の予想とは別の種類の指摘なので、採点表 1 の「想定外の指摘」の行に書きます。
 
 次に、すべての Finding の詳細を取り出します。2 つ目のコマンドは、詳細のうち、攻撃スクリプトと検証スクリプトがあるかどうかと、コードの位置だけを表示します。
 
@@ -613,7 +647,28 @@ aws securityagent batch-get-findings --agent-space-id "${AGENT_SPACE_ID}" --find
   --query 'findings[].{name:name,validation:validationStatus,confidence:confidence,attackScript:attackScript!=`null`,verificationScript:verificationScript!=`null`,where:codeLocations[].[filePath,lineStart,label]}' --output json
 ```
 
-`attackScript` と `verificationScript` は、値があれば `true`、無ければ `false` と表示されます。最後に、詳細のすべてを記録フォルダーに保存します。
+2026 年 11 月 18 日の検証での出力の一部は、次のとおりです。
+
+```json
+[
+    {
+        "name": "Unauthenticated SQL injection in GET /records?q= exfiltrates customer PII via UNION",
+        "validation": null,
+        "confidence": "HIGH",
+        "attackScript": true,
+        "verificationScript": false,
+        "where": [
+            ["/tmp/opt/source_code/code_sc-<ID>/app.py", 50, "sink: string-concatenated SQL executed on shared DB connection"],
+            ["/tmp/opt/source_code/code_sc-<ID>/app.py", 79, "source: unvalidated q query param -> search_records, no auth"],
+            ["/tmp/opt/source_code/code_sc-<ID>/app.py", 30, "supporting: customers PII loaded into same DB connection"],
+            ["/tmp/opt/source_code/code_sc-<ID>/data/customers.csv", 1, "supporting: PII (names+emails) reachable via UNION"]
+        ]
+    },
+    …
+]
+```
+
+`attackScript` と `verificationScript` は、値があれば `true`、無ければ `false` と表示されます。検証では、9 件すべてに攻撃スクリプトがあり、検証スクリプトはどれにもありませんでした。`validation` は、項目が無いため `null` です。コードの位置のファイルのパスは、Security Agent が zip を展開した場所の絶対パスです。最後の `app.py` のようなファイル名で、作業フォルダーのファイルを開いて読みます。札は、`source:`・`sink:`・`anchor:`・`supporting:` で始まる説明の文です。最後に、詳細のすべてを記録フォルダーに保存します。
 
 ```bash
 aws securityagent batch-get-findings --agent-space-id "${AGENT_SPACE_ID}" --finding-ids ${FINDING_IDS} --output json > ~/deepcuts-results/findings-full.json
@@ -636,7 +691,7 @@ aws securityagent batch-get-findings --agent-space-id "${AGENT_SPACE_ID}" --find
 
 ### 6-5. 任意: 検証の方式を SIMULATED にしてもう一度スキャンする
 
-5-2 の `validationMode` が `DISABLED` か値が無く、すべての Finding の検証の状態が `NOT_VALIDATED` だった場合は、検証の方式を `SIMULATED` にして、もう一度フルスキャンを行えます。Price List のコードレビューの単価は $0.00/時です。ただし、シミュレーションによる検証が別に計量されるかは確かめられていないため、翌日の請求で確かめてください。時間はフルスキャン 1 回分かかります。Claude Code に、次の文を送ります。
+5-2 の `validationMode` が `DISABLED` か値が無く、すべての Finding の検証の状態が `NOT_VALIDATED` か、項目が無かった（`None` か `null` と表示された）場合は、検証の方式を `SIMULATED` にして、もう一度フルスキャンを行えます。Price List のコードレビューの単価は $0.00/時です。ただし、シミュレーションによる検証が別に計量されるかは確かめられていないため、翌日の請求で確かめてください。時間はフルスキャン 1 回分かかります。Claude Code に、次の文を送ります。
 
 ```text
 検証の方式を SIMULATED にした新しいコードレビューを作り、このディレクトリのフルスキャンをもう一度実行してください。コードレビューの作成には --validation-mode SIMULATED を付けてください。
@@ -662,11 +717,11 @@ aws securityagent batch-get-code-reviews --agent-space-id "${AGENT_SPACE_ID}" --
 
 `validationMode` が `SIMULATED` であることを確かめます。ジョブの状態は、5-2 の `batch-get-code-review-jobs` の `JOB_ID_FULL` を `JOB_ID_SIM` に置き換えて確かめます。ジョブの状態が `COMPLETED` になったら、6-2 のコマンドの `JOB_ID_FULL` を `JOB_ID_SIM` に置き換えて実行し、検証の状態が変わったかを記録してください。
 
-<!-- 要確認: 著者の実機で、既定の validationMode と、SIMULATED にしたときの validationStatus の変化 -->
+<!-- 要確認: 著者の実機で、SIMULATED にしたときの validationStatus の変化（既定の validationMode は、2026 年 11 月 18 日の検証で null、validationStatus は項目なしと確かめた） -->
 
 > **この手順で確かめること**
 > - **やること**: 6-1〜6-4 を行います。
-> - **期待する結果**: 予想では、`GET /records` と `partner_report.py` に Finding があります。`GET /records/top` は、報告されないか、確信度が低く報告されます。検証の状態の値は観察する項目で、検証の方式によっては `NOT_VALIDATED` になります。コードの位置に、`source` や `sink` の札が付いています。AI の要約には載らない項目があります。
+> - **期待する結果**: 予想では、`GET /records` と `partner_report.py` に Finding があります。`GET /records/top` は、報告されないか、確信度が低く報告されます。検証の状態の値は観察する項目で、検証の方式によっては `NOT_VALIDATED` になります。検証の方式を指定しないと、項目が無く、`None` か `null` と表示されます。コードの位置に、`source:` や `sink:` で始まる札が付いています。AI の要約には載らない項目（攻撃スクリプトの有無など）があります。
 > - **ここから分かること**: Security Agent の Finding は、確信度と検証の状態を API の項目として持ちます。AI の要約は読みやすい一方で、判断に要る項目が落ちることがあります。落ちた項目は、API の応答で確かめられます。
 
 ## ７．修正して差分スキャンで確かめる
@@ -747,11 +802,11 @@ AWS Security Agent で、コミットしていない変更の差分スキャン�
 | AI コーディングツールが実行するコマンド | AWS に依頼すること | AWS の中で起きること |
 | --- | --- | --- |
 | `git diff HEAD > /tmp/diff.patch` | なし。変更を unified diff の形式のファイルにする | 何も起きない |
-| `zip -r /tmp/source.zip . ...` と、zip と `diff.patch` のアップロード | zip を `security-scans/source/`、差分を `security-scans/diffs/<ID>/diff.patch` に保存する | バケットに保存される |
+| `zip -r /tmp/source.zip . ...` と、zip と `diff.patch` のアップロード（`aws s3api put-object ... --expected-bucket-owner <アカウント ID>` を 2 回） | zip を `security-scans/source/`、差分を `security-scans/diffs/<ID>/diff.patch` に保存する | バケットに保存される |
 | `aws securityagent start-code-review-job --agent-space-id ... --code-review-id ... --diff-source s3Uri=s3://<バケット>/security-scans/diffs/<ID>/diff.patch` | 差分スキャンを始める | 新しいジョブが作成され、Security Agent が変更した行だけを分析する |
 | `aws securityagent batch-get-code-review-jobs ...` を 2 分ごと | ジョブの状態を返す | 何も作らない |
 
-unified diff は、変更前と変更後の行を `-` と `+` で示すテキストの形式です。差分スキャンは、フルスキャンが先に無くても行えます。差分スキャンでも、5-1 の Note と同じく、`aws s3 cp` のコマンドを承認する前に読んでください。
+unified diff は、変更前と変更後の行を `-` と `+` で示すテキストの形式です。差分スキャンは、フルスキャンが先に無くても行えます。差分スキャンでも、スキルには `aws s3 cp ... --expected-bucket-owner` が書かれていて、そのままでは失敗します。5-1 の Note と同じく、`--expected-bucket-owner` を付けた `aws s3api put-object` に置き換えたコマンドを、承認する前に読んでください。
 
 ### 7-4. 差分スキャンを自分で確かめる
 
@@ -829,8 +884,8 @@ AWS Security Agent で、docs/requirements.md と docs/design.md を仕様書に
 
 | AI コーディングツールが実行するコマンド | AWS に依頼すること | AWS の中で起きること |
 | --- | --- | --- |
-| `zip -r /tmp/source.zip . ...` と zip のアップロード | 作業フォルダーの zip を保存する | バケットに保存される |
-| 仕様書のアップロード | 仕様書を `security-scans/threat-models/<ID>/specs/` に保存する | バケットに保存される |
+| `zip -r /tmp/source.zip . ...` と zip のアップロード（`aws s3api put-object ... --expected-bucket-owner <アカウント ID>`） | 作業フォルダーの zip を保存する | バケットに保存される |
+| 仕様書のアップロード（`aws s3api put-object ... --expected-bucket-owner <アカウント ID>` を 2 回） | 仕様書を `security-scans/threat-models/<ID>/specs/` に保存する | バケットに保存される |
 | `aws securityagent create-threat-model --agent-space-id ... --title ... --service-role ... --assets ... --scope-docs ...` | 脅威モデルを作成する。`--scope-docs` で、仕様書を重点的に見る文書として渡す | 脅威モデルが作成され、ID が返る |
 | `aws securityagent start-threat-model-job --agent-space-id ... --threat-model-id ...` | 脅威モデリングを始める | ジョブが作成され、Security Agent が仕様書とコードを分析する |
 | `aws securityagent batch-get-threat-model-jobs ...` を 2 分ごと | ジョブの状態を返す | 何も作らない |
@@ -858,7 +913,29 @@ aws securityagent list-threats --agent-space-id "${AGENT_SPACE_ID}" --threat-job
   --query 'threats[].{title:title,severity:severity,stride:stride}' --output json
 ```
 
-`systemOverview` は、Security Agent がまとめたシステムの概要です。脅威の深刻度は、`CRITICAL`・`HIGH`・`MEDIUM`・`LOW`・`INFO` のどれかです。
+2026 年 11 月 18 日の検証での出力の一部は、次のとおりです。脅威は 8 件でした。
+
+```json
+[
+    {
+        "title": "Partner-controlled path traversal reads arbitrary host files",
+        "severity": "CRITICAL",
+        "stride": [
+            "INFORMATION_DISCLOSURE"
+        ]
+    },
+    {
+        "title": "Stolen shared key enables partner impersonation",
+        "severity": "CRITICAL",
+        "stride": [
+            "SPOOFING"
+        ]
+    },
+    …
+]
+```
+
+`systemOverview` は、Security Agent がまとめたシステムの概要です。脅威の深刻度は、`CRITICAL`・`HIGH`・`MEDIUM`・`LOW`・`INFO` のどれかです。`stride` は、STRIDE の分類の配列です。1 つの脅威に、分類が 1 つ以上入ります。
 
 次に、各脅威の前提条件・影響・根拠のファイル・推奨の対策を、記録フォルダーに保存して読みます。
 
@@ -878,7 +955,14 @@ aws securityagent batch-get-threats --agent-space-id "${AGENT_SPACE_ID}" --threa
 python3 -m json.tool ~/deepcuts-results/threats.json
 ```
 
-`evidence` は、Security Agent が脅威の根拠にしたソースファイルの一覧です。`batch-get-threats` に 1 回で渡せる ID の数の上限は、API の仕様に書かれていません。エラーになった場合は、ID を分けて渡してください。<!-- 要確認: batch-get-threats の 1 回の件数の上限 -->
+`evidence` は、Security Agent が脅威の根拠にしたソースファイルの一覧です。ただし、2026 年 11 月 18 日の検証では、8 件すべてで `evidence` が空の配列 `[]` でした。その場合は、脅威の文 `statement`・攻撃の手口 `threatAction`・設計のどこに当たるかを示す `anchor` に、根拠のファイルや関数の名前が書かれています。次のコマンドで読めます。
+
+```bash
+aws securityagent batch-get-threats --agent-space-id "${AGENT_SPACE_ID}" --threat-ids ${THREAT_IDS} \
+  --query 'threats[].{title:title,statement:statement,action:threatAction,anchor:anchor.id}' --output json
+```
+
+検証では、パストラバーサルの脅威の `threatAction` に `os.path.join/read_jacket`、`anchor` に `portal-app → inbox-store` が入っていました。`batch-get-threats` に 1 回で渡せる ID の数の上限は、API の仕様に書かれていません。エラーになった場合は、ID を分けて渡してください。<!-- 要確認: batch-get-threats の 1 回の件数の上限 -->
 
 <!-- 要確認: Security Agent のコンソールで脅威モデルを開く画面の名前と順序 -->
 <!-- 画面写真: Security Agent のコンソールの脅威モデルの結果。STRIDE の分類を枠で囲む -->
@@ -902,7 +986,7 @@ docs/requirements.md と docs/design.md を読み、今のコードと照らし�
 
 > **この手順で確かめること**
 > - **やること**: 8-1〜8-3 を行い、採点表 3 を埋めます。
-> - **期待する結果**: 予想では、脅威が STRIDE の分類と深刻度付きで返ります。取引先がアップロードするファイルや、報告のダウンロードに関わる情報の漏えいや改ざんの脅威が挙がるかを観察します。`evidence` に `partner_report.py` が入るかを記録します。
+> - **期待する結果**: 予想では、脅威が STRIDE の分類と深刻度付きで返ります。取引先がアップロードするファイルや、報告のダウンロードに関わる情報の漏えいや改ざんの脅威が挙がるかを観察します。`evidence` に `partner_report.py` が入るかを記録します。`evidence` が空の場合は、`statement`・`threatAction`・`anchor` に `partner_report.py` や `read_jacket` が出るかを記録します。
 > - **ここから分かること**: 脅威モデリングは、まだ書いていない機能の設計を、今のコードと照らして評価します。コードのスキャンとは、確認する対象が違います。
 
 ## ９．採点表で比べる
@@ -930,7 +1014,7 @@ docs/requirements.md と docs/design.md を読み、今のコードと照らし�
 | 修正の手がかり | | |
 | AWS の費用 | 0 | Price List で $0.00/時 |
 
-採点表 3「脅威モデリング」には、脅威の題・STRIDE・深刻度・根拠のファイル・あなたの判断を書きます。
+採点表 3「脅威モデリング」には、脅威の題・STRIDE・深刻度・根拠のファイル・あなたの判断を書きます。`evidence` が空だった場合は、根拠のファイルの列に、8-3 の `statement`・`threatAction`・`anchor` に出たファイルや関数の名前を書きます。
 
 判定の基準は、次のとおりです。
 
@@ -1117,7 +1201,7 @@ AWS の資料では、Security Agent に対応したツールとして GitHub Co
 | 東京でコードレビューか脅威モデリングが使えない | エラーの文 | `bash ./cleanup.sh` を実行し、`rm -rf ~/deepcuts-record-shop ~/deepcuts-results` で作業フォルダーと記録フォルダーを消します。作業フォルダーの `.security-agent/config.json` にはリージョンが記録されているためです。その後、手順 1 の `export` の値を `us-east-1` にして、手順 1 からやり直します。手順の `ap-northeast-1` は `us-east-1` に読み替えます |
 | AI コーディングツールが `us-east-1` で作業している | `cat .security-agent/config.json` | 手順 4 の前に気づいた場合は、AI コーディングツールを終了し、手順 4-1 の `export` を実行してから起動し直してください。手順 4 の後に気づいた場合は、`config.json` の `region` のリージョンにリソースが作成されています。`cleanup.sh` は記録のリージョンのものだけを消すため、そのリージョンのエージェントスペースとバケット `security-agent-scans-<アカウント ID>-<そのリージョン>` を、手順 10 の確認のコマンドに `--region` を付けて確かめ、手で消してください |
 | `md5sum: command not found` と表示される | `command -v md5sum` | `brew install coreutils` でインストールするか、AI コーディングツールに「md5sum の代わりに md5 -q を使ってください」と頼んでください |
-| `Unknown options: --expected-bucket-owner` と表示される | `aws --version` | 手順 5-1 の Note を確認してください。AI コーディングツールが置き換えたコマンドにも `--expected-bucket-owner` が付いているかを読んでから承認してください |
+| `Unknown options: --expected-bucket-owner` と表示される | `aws --version` | スキルに書かれた `aws s3 cp` は、AWS CLI 2.41.0 でもこのオプションを受け付けません。手順 5-1 の Note のとおり、`--expected-bucket-owner` を付けた `aws s3api put-object` に置き換えるよう AI コーディングツールに頼み、置き換えたコマンドにこのオプションが付いているかを読んでから承認してください |
 | `.security-agent/config.json` が無い | `ls -a .security-agent` | 手順 4-2 が終わっていません。Claude Code に、準備が終わったかを聞いてください |
 | ジョブが `FAILED` になる | `aws securityagent batch-get-code-review-jobs --agent-space-id "${AGENT_SPACE_ID}" --code-review-job-ids "${JOB_ID_FULL}" --query 'codeReviewJobs[0].errorInformation'` | `CLIENT_ERROR` なら、zip の場所・ロール・バケットの登録を手順 4-3 で確かめてください。`INTERNAL_ERROR` なら、しばらく待ってから AI コーディングツールにやり直しを頼んでください |
 | ジョブが `PREFLIGHT` のまま 10 分以上進まない | 上と同じコマンドの `--query` を `codeReviewJobs[0].steps` にする | スキルの記述によると、サービス側の問題です。出力を記録して待つか、`stop-code-review-job` で止めてください |
